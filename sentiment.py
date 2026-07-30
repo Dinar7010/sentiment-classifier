@@ -23,4 +23,5 @@ sns.heatmap(cm,annot=True,fmt='d',xticklabels=['нейтральный','поз�
 plt.xlabel('Predicted')
 plt.ylabel('True')
 plt.title('Confusion Matrix')
+plt.savefig('confusion_matrix.png')
 plt.show()
