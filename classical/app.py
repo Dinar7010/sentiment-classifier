@@ -12,6 +12,17 @@ class TextRequest(BaseModel):
 def read_root():
     return {"message": "Sentiment classifier API работает"}
 
+@app.get("/health")
+def health():
+    return {"status": "ok",
+            "model": type(model).__name__,
+            "classes":[int(c)for c in model.classes_],
+            "len":len(vectorizer.vocabulary_)}
+
+@app.get("/LABELS")
+def read_labels():
+    return {"LABELS": labels}
+
 @app.post("/predict")
 def predict(request: TextRequest):
     if not request.text.strip():
