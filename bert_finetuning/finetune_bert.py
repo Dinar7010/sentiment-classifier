@@ -7,10 +7,15 @@ from torch.utils.data import TensorDataset, DataLoader
 from torch.optim.lr_scheduler import StepLR
 from torch.optim.lr_scheduler import ReduceLROnPlateau
 import copy
+from pathlib import Path
+
 df=pd.read_csv("C:\\Users\\User\PyCharmMiscProject\sentiment-project\sentiment_dataset.csv")
 dfs=df.sample(n=1000,random_state=42)
 
-tokenizer = AutoTokenizer.from_pretrained("DeepPavlov/rubert-base-cased")#Тело трансформера (BERT) — предобученное на огромном корпусе текста, уже понимает язык "в целом".
+ID2LABEL={0: "нейтральный", 1: "позитивный", 2: "негативный"}
+LABEL2ID={v: k for k, v in ID2LABEL.items()}
+
+tokenizer = AutoTokenizer.from_pretrained("DeepPavlov/rubert-base-cased",num_labels=3,id2label=LABEL2ID,label2id=LABEL2ID)
 model = AutoModelForSequenceClassification.from_pretrained("DeepPavlov/rubert-base-cased", num_labels=3)
 
 texts=dfs["text"].tolist()
@@ -53,7 +58,7 @@ for epoch in range(8):
             best_model_state=copy.deepcopy(model.state_dict())
         else:
             patience_counter+=1
-        if patience_counter==8:
+        if patience_counter>=5:
             print(f"Epoch:{epoch}")
             break
         prediction = torch.argmax(val_output.logits,dim=1)
@@ -70,3 +75,7 @@ with torch.no_grad():
     test_prediction = torch.argmax(test_output.logits, dim=1)
     test_accuracy = (test_prediction == y_test_t).float().mean()
 print(f"Final Accuracy: {test_accuracy.item():.4f},Test Loss:{test_loss.item():.4f}")
+SAVE_DIR = Path(__file__).parent / "saved_model"
+model.save_pretrained(SAVE_DIR)
+tokenizer.save_pretrained(SAVE_DIR)
+print(f"Модель сохранена в {SAVE_DIR}")

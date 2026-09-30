@@ -8,3 +8,4 @@ venv/
 .idea/
 sentiment_dataset.csv
 archive.zip
+bert_finetuning/saved_model/
