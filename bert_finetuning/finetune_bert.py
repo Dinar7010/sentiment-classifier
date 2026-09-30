@@ -15,8 +15,8 @@ dfs=df.sample(n=1000,random_state=42)
 ID2LABEL={0: "нейтральный", 1: "позитивный", 2: "негативный"}
 LABEL2ID={v: k for k, v in ID2LABEL.items()}
 
-tokenizer = AutoTokenizer.from_pretrained("DeepPavlov/rubert-base-cased",num_labels=3,id2label=LABEL2ID,label2id=LABEL2ID)
-model = AutoModelForSequenceClassification.from_pretrained("DeepPavlov/rubert-base-cased", num_labels=3)
+tokenizer = AutoTokenizer.from_pretrained("DeepPavlov/rubert-base-cased",num_labels=3,id2label=ID2LABEL,label2id=LABEL2ID)
+model = AutoModelForSequenceClassification.from_pretrained("DeepPavlov/rubert-base-cased", num_labels=3,id2label=ID2LABEL,label2id=LABEL2ID,)
 
 texts=dfs["text"].tolist()
 labels=dfs["label"].values
