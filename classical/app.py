@@ -5,10 +5,13 @@ import joblib
 import torch
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from transformers import AutoModelForSequenceClassification, AutoTokenizer, AutoModel
+from sentence_transformers import SentenceTransformer
+from transformers import AutoModelForSequenceClassification, AutoTokenizer
 
 BASE_DIR = Path(__file__).parent
+EMBEDDINGS_DIR = BASE_DIR.parent / "embeddings"
 BERT_DIR = BASE_DIR.parent / "bert_finetuning" / "saved_model"
+ENCODER_NAME = "paraphrase-multilingual-MiniLM-L12-v2"
 labels={0:"нейтральный",1:"позитивный",2:"негативный"}
 
 models={}
@@ -20,6 +23,8 @@ async def lifespan(app: FastAPI):
     bert=AutoModelForSequenceClassification.from_pretrained(str(BERT_DIR))
     bert.eval()
     models["bert"] = bert
+    models["encoder"] = SentenceTransformer(ENCODER_NAME)
+    models["embeddings"]=joblib.load(EMBEDDINGS_DIR / "embeddings_clf.pkl")
     yield
     models.clear()
 
@@ -27,7 +32,7 @@ app = FastAPI(lifespan=lifespan)
 
 class TextRequest(BaseModel):
     text: str
-    model: Literal["tfidf", "bert"] = "tfidf"
+    model: Literal["tfidf", "bert","embeddings"] = "tfidf"
 
 def predict_tfidf(text: str) -> int:
     X = models["vectorizer"].transform([text])
@@ -38,6 +43,10 @@ def predict_bert(text: str) -> int:
     with torch.no_grad():
         logits = models["bert"](**inputs).logits
     return int(logits.argmax(dim=-1))
+
+def predict_embeddings(text: str) -> int:
+    X = models["encoder"].encode([text])
+    return int(models["embeddings"].predict(X)[0])
 
 @app.get("/")
 def read_root():
@@ -56,6 +65,8 @@ def predict(request: TextRequest):
         raise HTTPException(status_code=400, detail="Текст не может быть пустым")
     if request.model == "tfidf":
         label=predict_tfidf(request.text)
-    else:
+    elif request.model == "bert":
         label=predict_bert(request.text)
+    else:
+        label=predict_embeddings(request.text)
     return{"text": request.text,"model":request.model,"label": label,"sentiment": labels[label],}

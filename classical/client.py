@@ -2,7 +2,7 @@ import requests
 
 texts=["фильм крутой","фильм плохой","не понял суть фильма","",123]
 url = "http://127.0.0.1:8000"
-models = ["tfidf", "bert"]
+models = ["tfidf", "bert","embeddings"]
 response = requests.get(f"{url}/health",timeout=5)
 print(response.status_code,response.json())
 print()
