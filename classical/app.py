@@ -48,6 +48,11 @@ def predict_embeddings(text: str) -> int:
     X = models["encoder"].encode([text])
     return int(models["embeddings"].predict(X)[0])
 
+PREDICTORS = {
+    "tfidf": predict_tfidf,
+    "bert": predict_bert,
+    "embeddings": predict_embeddings,
+}
 @app.get("/")
 def read_root():
     return {"message": "Sentiment classifier API работает"}
@@ -55,7 +60,7 @@ def read_root():
 @app.get("/health")
 def health():
     return {"status": "ok",
-            "models": ["tfidf", "bert"],
+            "models": list(PREDICTORS.keys()),
             "loaded":list(models.keys()),
             "len":len(models["vectorizer"].vocabulary_)}
 
@@ -63,10 +68,5 @@ def health():
 def predict(request: TextRequest):
     if not request.text.strip():
         raise HTTPException(status_code=400, detail="Текст не может быть пустым")
-    if request.model == "tfidf":
-        label=predict_tfidf(request.text)
-    elif request.model == "bert":
-        label=predict_bert(request.text)
-    else:
-        label=predict_embeddings(request.text)
+    label=PREDICTORS[request.model](request.text)
     return{"text": request.text,"model":request.model,"label": label,"sentiment": labels[label],}

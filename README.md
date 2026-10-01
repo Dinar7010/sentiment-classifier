@@ -1,15 +1,15 @@
 # Sentiment Classifier — классификация тональности отзывов
 
 Сравнение трёх подходов к классификации тональности текстовых отзывов на русском языке
-(нейтральный / положительный / отрицательный): от классического ML до fine-tuning трансформера.
+(нейтральный / положительный / отрицательный): от классического ML до fine-tuning трансформера + REST API.
 
 ## Задача
 
 На вход подаётся датасет с текстовыми отзывами. Для каждого отзыва определяется класс тональности:
 
 - `0` — нейтральный
-- `1` — положительный
-- `2` — отрицательный
+- `1` — позитивный
+- `2` — негативный
 
 ## Данные
 
@@ -21,11 +21,11 @@
 
 ## Подходы и результаты
 
-| Подход | Файл | Данные | Accuracy |
-|---|---|---|---|
-| TF-IDF + LinearSVC | `classical/sentiment.py` | 290 458 строк | **0.70** |
-| Sentence embeddings + LinearSVC | `embeddings/embeddings_classifier.py` | 5 000 строк | 0.63–0.66 |
-| Fine-tuned RuBERT | `bert_finetuning/finetune_bert.py` | 1 000 строк | 0.615 |
+| Подход | Файл | Данные | Accuracy                           |
+|---|---|---|------------------------------------|
+| TF-IDF + LinearSVC | `classical/sentiment.py` | 290 458 строк | **0.70**                           |
+| Sentence embeddings + LinearSVC | `embeddings/embeddings_classifier.py` | 5 000 строк | 0.637                              |
+| Fine-tuned RuBERT | `bert_finetuning/finetune_bert.py` | 1 000 строк | 0.6-0.7 (в запусках 0.615 и 0.675) |
 
 ### Выводы
 
@@ -47,13 +47,67 @@
 - sentence-transformers (`paraphrase-multilingual-MiniLM-L12-v2`)
 - PyTorch, HuggingFace `transformers` (`DeepPavlov/rubert-base-cased`)
 - matplotlib, seaborn — визуализация
+- FastAPI, uvicorn, pydantic — REST API, joblib — сохранение моделей
 
 ## Как запустить
 
-1. Скачать датасет с [Kaggle](https://www.kaggle.com/datasets/mar1mba/russian-sentiment-dataset),
-   положить `sentiment_dataset.csv` в корень проекта 
-2. Установить зависимости:pip install pandas scikit-learn sentence-transformers torch transformers matplotlib seaborn 
-3. Запустить нужный скрипт
+1. Установить зависимости:
+
+```bash
+pip install fastapi uvicorn joblib scikit-learn pandas torch transformers sentence-transformers requests matplotlib seaborn
+```
+
+2. Скачать датасет с [Kaggle](https://www.kaggle.com/datasets/mar1mba/russian-sentiment-dataset)
+   и положить `sentiment_dataset.csv` в корень проекта.
+3. Обучить BERT (один раз, на CPU занимает несколько минут):
+
+```bash
+python bert_finetuning/finetune_bert.py
+```
+
+4. Запустить API:
+
+```bash
+python classical/run_server.py
+```
+
+Сервер стартует на `http://127.0.0.1:8000`, документация на `/docs`.
+
+
+## API
+### Эндпоинты: GET / (приветствие), GET /health (состояние и список моделей), POST /predict (тело: text и  model, одна из tfidf, bert, embeddings, по умолчанию стоит tfidf).
+
+### Пример запроса
+```python
+import requests
+
+response = requests.post(
+    "http://127.0.0.1:8000/predict",
+    json={"text": "фильм крутой", "model": "bert"},
+)
+print(response.json())
+```
+
+Ответ:
+
+```json
+{"text": "фильм крутой", "model": "bert", "label": 1, "sentiment": "позитивный"}
+```
+
+
+## Воспроизведение
+Готовые `.pkl` для TF-IDF и embeddings лежат в репозитории (они маленькие),
+поэтому переобучать их не обязательно, но кодировщик embeddings (paraphrase-multilingual-MiniLM-L12-v2) скачивается автоматически при первом старте сервера, поэтому нужен интернет, и первый запуск будет дольше.
+
+Модель BERT в репозиторий не входит: папка `bert_finetuning/saved_model/`
+весит сотни мегабайт и добавлена в `.gitignore`. Сервер ищет её при старте,
+поэтому перед первым запуском API нужно один раз выполнить:
+
+```bash
+python bert_finetuning/finetune_bert.py
+```
+
+Остальные скрипты нужны только для переобучения моделей.
 
 
 ## Ограничения
