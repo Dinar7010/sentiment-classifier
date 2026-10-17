@@ -54,7 +54,7 @@
 1. Установить зависимости:
 
 ```bash
-pip install fastapi uvicorn joblib scikit-learn pandas torch transformers sentence-transformers requests matplotlib seaborn
+pip install -r requirements.txt
 ```
 
 2. Скачать датасет с [Kaggle](https://www.kaggle.com/datasets/mar1mba/russian-sentiment-dataset)
