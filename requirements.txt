@@ -1,0 +1,11 @@
+fastapi==0.141.1
+uvicorn==0.53.0
+joblib==1.5.3
+scikit-learn==1.7.2
+pandas==2.3.3
+torch==2.13.0
+transformers==5.14.1
+sentence-transformers==5.7.0
+requests==2.34.2
+matplotlib==3.10.9
+seaborn==0.13.2
